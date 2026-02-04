@@ -4762,90 +4762,34 @@ end
 -- ** Aim Lock Keybind Logic Starts Here ** --
 
 do
-    local rightClickDown = false
     local rightClickBegan, rightClickEnded
 
     rightClickBegan = UserInputService.InputBegan:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton2 then return end
-        
-        rightClickDown = true
-        if _G.RivalsCHT_Aimbot then 
-            _G.RivalsCHT_Aimbot.ForceActive = true
-            _G.RivalsCHT_Aimbot.Start()
-        end
-    end)
-
-    rightClickEnded = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton2 then return end
-        
-        rightClickDown = false
-        if _G.RivalsCHT_Aimbot then 
-            _G.RivalsCHT_Aimbot.ForceActive = false
-        end
-        
-        local leftHeld = false
-        pcall(function() 
-            leftHeld = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) 
-        end)
-        
-        if not leftHeld then 
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
             if _G.RivalsCHT_Aimbot then 
-                _G.RivalsCHT_Aimbot.Stop() 
-            end 
-        end
-    end)
-
-    RegisterUnload(function()
-        if rightClickBegan and rightClickBegan.Disconnect then 
-            pcall(function() rightClickBegan:Disconnect() end) 
-        end
-        if rightClickEnded and rightClickEnded.Disconnect then 
-            pcall(function() rightClickEnded:Disconnect() end) 
-        end
-    end)
-end
-
-    updateTargetKey()
-
-    -- Watch for keybind changes from UI
-    pcall(function()
-        local api = KeybindAPI[aimLockKeybind]
-        if api then
-            local prevOnBind = api.OnBind
-            api.OnBind = function(k)
-                if prevOnBind then prevOnBind(k) end
-                updateTargetKey()
+                _G.RivalsCHT_Aimbot.ForceActive = true
+                _G.RivalsCHT_Aimbot.Start()
             end
         end
     end)
 
-    local aimLockDown = false
-    local kbBegan, kbEnded
-
-    kbBegan = UserInputService.InputBegan:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-        if input.KeyCode == targetKey then
-            aimLockDown = true
-            if _G.RivalsCHT_Aimbot then _G.RivalsCHT_Aimbot.ForceActive = true; _G.RivalsCHT_Aimbot.Start() end
-        end
-    end)
-
-    kbEnded = UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-        if input.KeyCode == targetKey then
-            aimLockDown = false
-            if _G.RivalsCHT_Aimbot then _G.RivalsCHT_Aimbot.ForceActive = false end
-            local leftHeld = false
-            pcall(function() leftHeld = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) end)
-            if not leftHeld then if _G.RivalsCHT_Aimbot then _G.RivalsCHT_Aimbot.Stop() end end
+    rightClickEnded = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            if _G.RivalsCHT_Aimbot then 
+                _G.RivalsCHT_Aimbot.ForceActive = false
+            end
+            
+            local leftHeld = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+            if not leftHeld and _G.RivalsCHT_Aimbot then 
+                _G.RivalsCHT_Aimbot.Stop() 
+            end
         end
     end)
 
     RegisterUnload(function()
-        if kbBegan and kbBegan.Disconnect then pcall(function() kbBegan:Disconnect() end) end
-        if kbEnded and kbEnded.Disconnect then pcall(function() kbEnded:Disconnect() end) end
+        if rightClickBegan then rightClickBegan:Disconnect() end
+        if rightClickEnded then rightClickEnded:Disconnect() end
     end)
-
 end
 
 
@@ -6109,3 +6053,4 @@ end
 
 
 -- ** Like a wise man once said, "Show me the client's state, and I'll show you the perfect hook." - some guy lol ** --
+
