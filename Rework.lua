@@ -4762,19 +4762,116 @@ end
 -- ** Aim Lock Keybind Logic Starts Here ** --
 
 do
-    local rightClickBegan, rightClickEnded
+    local rightClickBegan, rightClickEnded, rightClickLoop
+
+    local function findTargetInFOV()
+        local cam = workspace.CurrentCamera
+        if not cam then return nil end
+        
+        local vs = cam.ViewportSize
+        local cx, cy = vs.X * 0.5, vs.Y * 0.5
+        local best, bestDist = nil, math.huge
+        local fovMax = GetConfig("combat.aimbotFOV", 700) or 700
+        
+        for _, pl in ipairs(Players:GetPlayers()) do
+            if pl ~= Players.LocalPlayer then
+                local ch = pl.Character
+                if ch then
+                    local okAlive = pcall(function() 
+                        return _G.RivalsCHT_Aimbot and _G.RivalsCHT_Aimbot.IsAlive(ch) 
+                    end)
+                    if okAlive then
+                        local head = ch:FindFirstChild("Head") or ch:FindFirstChild("HumanoidRootPart")
+                        if head and head.Position then
+                            -- Team check
+                            local isTeammate = false
+                            if GetConfig("combat.teamCheck", true) and _G.RivalsCHT_TeamCheck then
+                                pcall(function() 
+                                    isTeammate = _G.RivalsCHT_TeamCheck.IsTeammate(pl) 
+                                end)
+                            end
+                            
+                            if not isTeammate then
+                                local p = cam:WorldToViewportPoint(head.Position)
+                                if p.Z > 0 then
+                                    -- Check FOV
+                                    local dx = p.X - cx
+                                    local dy = p.Y - cy
+                                    local dist = math.sqrt(dx*dx + dy*dy)
+                                    
+                                    if dist < bestDist and dist <= fovMax then
+                                        -- Check wall if needed
+                                        local blocked = false
+                                        if not GetConfig("combat.targetBehindWalls", false) then
+                                            pcall(function()
+                                                local rp = RaycastParams.new()
+                                                rp.FilterType = Enum.RaycastFilterType.Blacklist
+                                                rp.FilterDescendantsInstances = { ch }
+                                                local origin = cam.CFrame.Position
+                                                local direction = head.Position - origin
+                                                local ray = workspace:Raycast(origin, direction, rp)
+                                                if ray and ray.Instance and not ray.Instance:IsDescendantOf(ch) then
+                                                    blocked = true
+                                                end
+                                            end)
+                                        end
+                                        
+                                        if not blocked then
+                                            bestDist = dist
+                                            best = head
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        return best
+    end
 
     rightClickBegan = UserInputService.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
-            if _G.RivalsCHT_Aimbot then 
-                _G.RivalsCHT_Aimbot.ForceActive = true
-                _G.RivalsCHT_Aimbot.Start()
+            -- Start checking for targets
+            if not rightClickLoop then
+                rightClickLoop = RunService.RenderStepped:Connect(function()
+                    local target = findTargetInFOV()
+                    
+                    if target then
+                        -- Target found in FOV, activate aimbot
+                        if _G.RivalsCHT_Aimbot then 
+                            _G.RivalsCHT_Aimbot.ForceActive = true
+                            _G.RivalsCHT_Aimbot.Start()
+                            
+                            -- Set persistent target if enabled
+                            if GetConfig("combat.persistentAimbot", false) then
+                                pcall(function()
+                                    _G.RivalsCHT_Aimbot.SetPersistentTarget(target.Parent)
+                                end)
+                            end
+                        end
+                    else
+                        -- No target in FOV, deactivate
+                        if _G.RivalsCHT_Aimbot then 
+                            _G.RivalsCHT_Aimbot.ForceActive = false
+                            _G.RivalsCHT_Aimbot.Stop()
+                        end
+                    end
+                end)
             end
         end
     end)
 
     rightClickEnded = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            -- Stop the loop
+            if rightClickLoop then
+                rightClickLoop:Disconnect()
+                rightClickLoop = nil
+            end
+            
             if _G.RivalsCHT_Aimbot then 
                 _G.RivalsCHT_Aimbot.ForceActive = false
             end
@@ -4789,9 +4886,9 @@ do
     RegisterUnload(function()
         if rightClickBegan then rightClickBegan:Disconnect() end
         if rightClickEnded then rightClickEnded:Disconnect() end
+        if rightClickLoop then rightClickLoop:Disconnect() end
     end)
 end
-
 
 
 
@@ -6053,4 +6150,5 @@ end
 
 
 -- ** Like a wise man once said, "Show me the client's state, and I'll show you the perfect hook." - some guy lol ** --
+
 
