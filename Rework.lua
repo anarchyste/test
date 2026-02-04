@@ -2763,7 +2763,7 @@ local sixthSenseToggle = makeToggle(combatTab.RightCol, "Sixth Sense")
 local autoShootToggle = makeToggle(combatTab.LeftCol, "Auto-Shoot")
 local enableAutoShootKeybind = makeKeyBindButton(combatTab.RightCol, "Auto-Shoot Keybind", Enum.KeyCode.Y)
 -- ** Save Combat to Config **
-BindToggleToConfig(aimbotToggle, "combat.aimbot", false)
+BindToggleToConfig(aimbotToggle, "combat.aimbot", true)
 BindToggleToConfig(useAimbotSmoothingToggle, "combat.useAimbotSmoothing", false)
 BindToggleToConfig(drawFovCircleToggle, "combat.drawFovCircle", false)
 BindToggleToConfig(targetBehindWallsToggle, "combat.targetBehindWalls", false)
@@ -6150,5 +6150,6 @@ end
 
 
 -- ** Like a wise man once said, "Show me the client's state, and I'll show you the perfect hook." - some guy lol ** --
+
 
 
